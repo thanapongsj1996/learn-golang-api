@@ -9,9 +9,13 @@ import (
 
 // Article struct for test response
 type Article struct {
-	ID    uint
-	Title string
-	Body  string
+	ID    uint   `json:"id"`
+	Title string `json:"title"`
+	Body  string `json:"body"`
+}
+type creatArticleForm struct {
+	Title string `json:"title" binding:"required"`
+	Body  string `json:"body" binding:"required"`
 }
 
 // Serve func for routes
@@ -49,5 +53,23 @@ func Serve(r *gin.Engine) {
 		}
 
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "Article not found"})
+	})
+
+	articlesGroup.POST("/", func(ctx *gin.Context) {
+		var form creatArticleForm
+
+		if err := ctx.ShouldBindJSON(&form); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		addedArticle := Article{
+			ID:    uint(len(articles) + 1),
+			Title: form.Title,
+			Body:  form.Body,
+		}
+
+		articles = append(articles, addedArticle)
+		ctx.JSON(http.StatusCreated, gin.H{"article": addedArticle})
 	})
 }
