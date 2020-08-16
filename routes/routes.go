@@ -7,12 +7,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Article struct for test response
 type Article struct {
 	ID    uint
 	Title string
 	Body  string
 }
 
+// Serve func for routes
 func Serve(r *gin.Engine) {
 	articles := []Article{
 		{ID: 1, Title: "Title1", Body: "body1"},
@@ -20,6 +22,7 @@ func Serve(r *gin.Engine) {
 		{ID: 3, Title: "Title3", Body: "body3"},
 		{ID: 4, Title: "Title4", Body: "body4"},
 		{ID: 5, Title: "Title5", Body: "body5"},
+		{ID: 6, Title: "Title6", Body: "body6"},
 	}
 
 	articlesGroup := r.Group("/api/v1/articles")
