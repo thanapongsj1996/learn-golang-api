@@ -1,7 +1,9 @@
 package routes
 
 import (
+	"mime/multipart"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -12,10 +14,12 @@ type Article struct {
 	ID    uint   `json:"id"`
 	Title string `json:"title"`
 	Body  string `json:"body"`
+	Image string `json:"image"`
 }
 type creatArticleForm struct {
-	Title string `json:"title" binding:"required"`
-	Body  string `json:"body" binding:"required"`
+	Title string                `form:"title" binding:"required"`
+	Body  string                `form:"body" binding:"required"`
+	Image *multipart.FileHeader `form:"image" binding:"required"`
 }
 
 // Serve func for routes
@@ -58,7 +62,7 @@ func Serve(r *gin.Engine) {
 	articlesGroup.POST("/", func(ctx *gin.Context) {
 		var form creatArticleForm
 
-		if err := ctx.ShouldBindJSON(&form); err != nil {
+		if err := ctx.ShouldBind(&form); err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
@@ -68,6 +72,23 @@ func Serve(r *gin.Engine) {
 			Title: form.Title,
 			Body:  form.Body,
 		}
+
+		// Get file
+		file, _ := ctx.FormFile("image")
+
+		// Create path
+		// ID => 8, uploads/articles/8/image.png
+		path := "uploads/articles/" + strconv.Itoa(int(addedArticle.ID))
+		os.MkdirAll(path, 0755)
+
+		// Upload file
+		filename := path + "/" + file.Filename
+		if err := ctx.SaveUploadedFile(file, filename); err != nil {
+			// ...
+		}
+
+		// Attach file to article
+		addedArticle.Image = os.Getenv("HOST") + "/" + filename
 
 		articles = append(articles, addedArticle)
 		ctx.JSON(http.StatusCreated, gin.H{"article": addedArticle})
