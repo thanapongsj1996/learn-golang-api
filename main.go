@@ -1,6 +1,8 @@
 package main
 
 import (
+	"learn-golang-api/config"
+	"learn-golang-api/migrations"
 	"learn-golang-api/routes"
 	"log"
 	"os"
@@ -14,6 +16,10 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+
+	config.InitDB()
+	defer config.CloseDB()
+	migrations.Migrate()
 
 	r := gin.Default()
 	r.Static("/uploads", "./uploads")

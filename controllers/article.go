@@ -6,82 +6,91 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/copier"
+	"github.com/jinzhu/gorm"
 )
 
-type Articles struct{}
+type Articles struct {
+	DB *gorm.DB
+}
 
 type creatArticleForm struct {
-	Title string                `form:"title" binding:"required"`
-	Body  string                `form:"body" binding:"required"`
-	Image *multipart.FileHeader `form:"image" binding:"required"`
+	Title   string                `form:"title" binding:"required"`
+	Body    string                `form:"body" binding:"required"`
+	Excerpt string                `form:"excerpt" binding:"required"`
+	Image   *multipart.FileHeader `form:"image" binding:"required"`
 }
 
-var articles []models.Article = []models.Article{
-	{ID: 1, Title: "Title1", Body: "body1"},
-	{ID: 2, Title: "Title2", Body: "body2"},
-	{ID: 3, Title: "Title3", Body: "body3"},
-	{ID: 4, Title: "Title4", Body: "body4"},
-	{ID: 5, Title: "Title5", Body: "body5"},
-	{ID: 6, Title: "Title6", Body: "body6"},
+type createdArticleResponse struct {
+	ID      uint   `json:"id"`
+	Title   string `json:"title"`
+	Excerpt string `json:"excerpt"`
+	Body    string `json:"body"`
+	Image   string `json:"image"`
 }
+
+var articles []models.Article = []models.Article{}
 
 func (a *Articles) FindAll(ctx *gin.Context) {
-	result := articles
 
-	if limit := ctx.Query("limit"); limit != "" {
-		n, _ := strconv.Atoi(limit)
-		result = result[:n]
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"articles": result})
 }
 
 func (a *Articles) FindOne(ctx *gin.Context) {
-	id, _ := strconv.Atoi(ctx.Param("id"))
 
-	for _, item := range articles {
-		if item.ID == uint(id) {
-			ctx.JSON(http.StatusOK, gin.H{"article": item})
-			return
-		}
-	}
-
-	ctx.JSON(http.StatusNotFound, gin.H{"error": "Article not found"})
 }
 
 func (a *Articles) Create(ctx *gin.Context) {
-	var form creatArticleForm
-
+	form := creatArticleForm{}
 	if err := ctx.ShouldBind(&form); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
 		return
 	}
 
-	addedArticle := models.Article{
-		ID:    uint(len(articles) + 1),
-		Title: form.Title,
-		Body:  form.Body,
+	// form => article
+	article := models.Article{}
+	copier.Copy(&article, &form)
+
+	// article => DB
+	if err := a.DB.Create(&article).Error; err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+		return
 	}
 
-	// Get file
-	file, _ := ctx.FormFile("image")
+	a.setArticleImage(ctx, &article)
+	serializedArticle := createdArticleResponse{}
+	copier.Copy(&serializedArticle, &article)
 
-	// Create path
-	// ID => 8, uploads/articles/8/image.png
-	path := "uploads/articles/" + strconv.Itoa(int(addedArticle.ID))
+	ctx.JSON(http.StatusCreated, gin.H{"article": serializedArticle})
+}
+
+func (a *Articles) setArticleImage(ctx *gin.Context, article *models.Article) error {
+	file, err := ctx.FormFile("image")
+	if err != nil || file == nil {
+		return err
+	}
+
+	if article.Image != "" {
+		// Path รูปเดิม http://127.0.0.1:5000/upload/articles/<ID>/image.png
+		// 1. ดึง path /upload/articles/<ID>/image.png
+		article.Image = strings.Replace(article.Image, os.Getenv("HOST"), "", 1)
+		// 2. ตำแหน่งรูป <WD>/upload/articles/<ID>/image.png
+		pwd, _ := os.Getwd()
+		// 3. ลบรูปออก Remove <WD>/upload/articles/<ID>/image.png
+		os.Remove(pwd + article.Image)
+	}
+
+	path := "uploads/articles/" + strconv.Itoa(int(article.ID))
 	os.MkdirAll(path, 0755)
-
-	// Upload file
 	filename := path + "/" + file.Filename
 	if err := ctx.SaveUploadedFile(file, filename); err != nil {
-		// ...
+		return err
 	}
 
-	// Attach file to article
-	addedArticle.Image = os.Getenv("HOST") + "/" + filename
+	article.Image = os.Getenv("HOST") + "/" + filename
+	a.DB.Save(article)
 
-	articles = append(articles, addedArticle)
-	ctx.JSON(http.StatusCreated, gin.H{"article": addedArticle})
+	return nil
 }
