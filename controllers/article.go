@@ -24,7 +24,7 @@ type creatArticleForm struct {
 	Image   *multipart.FileHeader `form:"image" binding:"required"`
 }
 
-type createdArticleResponse struct {
+type articleResponse struct {
 	ID      uint   `json:"id"`
 	Title   string `json:"title"`
 	Excerpt string `json:"excerpt"`
@@ -32,14 +32,30 @@ type createdArticleResponse struct {
 	Image   string `json:"image"`
 }
 
-var articles []models.Article = []models.Article{}
-
 func (a *Articles) FindAll(ctx *gin.Context) {
+	var articles []models.Article
 
+	if err := a.DB.Find(&articles).Error; err != nil {
+		return
+	}
+
+	var serializedArticles []articleResponse
+	copier.Copy(&serializedArticles, &articles)
+
+	ctx.JSON(http.StatusOK, gin.H{"articles": serializedArticles})
 }
 
 func (a *Articles) FindOne(ctx *gin.Context) {
+	article, err := a.findArticleByID(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
 
+	serializedArticle := articleResponse{}
+	copier.Copy(&serializedArticle, &article)
+
+	ctx.JSON(http.StatusOK, gin.H{"article": serializedArticle})
 }
 
 func (a *Articles) Create(ctx *gin.Context) {
@@ -60,7 +76,7 @@ func (a *Articles) Create(ctx *gin.Context) {
 	}
 
 	a.setArticleImage(ctx, &article)
-	serializedArticle := createdArticleResponse{}
+	serializedArticle := articleResponse{}
 	copier.Copy(&serializedArticle, &article)
 
 	ctx.JSON(http.StatusCreated, gin.H{"article": serializedArticle})
@@ -93,4 +109,15 @@ func (a *Articles) setArticleImage(ctx *gin.Context, article *models.Article) er
 	a.DB.Save(article)
 
 	return nil
+}
+
+func (a *Articles) findArticleByID(ctx *gin.Context) (models.Article, error) {
+	var article models.Article
+	id := ctx.Param("id")
+
+	if err := a.DB.First(&article, id).Error; err != nil {
+		return article, err
+	}
+
+	return article, nil
 }
