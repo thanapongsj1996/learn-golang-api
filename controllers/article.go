@@ -32,17 +32,29 @@ type articleResponse struct {
 	Image   string `json:"image"`
 }
 
+type articlesPaging struct {
+	Items  []articleResponse `json:"items"`
+	Paging *pagingResult     `json:"paging"`
+}
+
 func (a *Articles) FindAll(ctx *gin.Context) {
 	var articles []models.Article
 
 	if err := a.DB.Find(&articles).Error; err != nil {
 		return
 	}
+	// default limit => 12
+	// /articles => limit => 12, page => 1
+	// /articles?limit=10 => limit => 10, page => 1
+	// /articles?page=10 => limit => 12, page => 10
+	// /articles?limit=10&page=2 => limit => 10, page => 2
+	pagination := pagination{ctx: ctx, query: a.DB.Order("id desc"), records: &articles}
+	paging := pagination.paginate()
 
 	var serializedArticles []articleResponse
 	copier.Copy(&serializedArticles, &articles)
 
-	ctx.JSON(http.StatusOK, gin.H{"articles": serializedArticles})
+	ctx.JSON(http.StatusOK, gin.H{"articles": articlesPaging{Items: serializedArticles, Paging: paging}})
 }
 
 func (a *Articles) FindOne(ctx *gin.Context) {
