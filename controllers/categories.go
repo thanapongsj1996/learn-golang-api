@@ -40,7 +40,7 @@ type updateCategoryForm struct {
 func (c *Categories) FindAll(ctx *gin.Context) {
 	var categories []models.Category
 
-	if err := c.DB.Order("id desc").Find(&categories).Error; err != nil {
+	if err := c.DB.Order("id").Find(&categories).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

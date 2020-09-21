@@ -62,7 +62,7 @@ func (a *Articles) FindAll(ctx *gin.Context) {
 	// /articles?limit=10 => limit => 10, page => 1
 	// /articles?page=10 => limit => 12, page => 10
 	// /articles?limit=10&page=2 => limit => 10, page => 2
-	pagination := pagination{ctx: ctx, query: a.DB.Preload("Category").Order("id desc"), records: &articles}
+	pagination := pagination{ctx: ctx, query: a.DB.Preload("Category").Order("id"), records: &articles}
 	paging := pagination.paginate()
 
 	var serializedArticles []articleResponse

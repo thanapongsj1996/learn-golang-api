@@ -4,7 +4,6 @@ import (
 	"learn-golang-api/config"
 	"learn-golang-api/migrations"
 	"learn-golang-api/routes"
-	"learn-golang-api/seed"
 	"log"
 	"os"
 
@@ -23,7 +22,7 @@ func main() {
 	config.InitDB()
 	defer config.CloseDB()
 	migrations.Migrate()
-	seed.Load()
+	// seed.Load()
 
 	r := gin.Default()
 	r.Static("/uploads", "./uploads")
