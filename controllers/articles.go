@@ -18,25 +18,32 @@ type Articles struct {
 }
 
 type creatArticleForm struct {
-	Title   string                `form:"title" binding:"required"`
-	Body    string                `form:"body" binding:"required"`
-	Excerpt string                `form:"excerpt" binding:"required"`
-	Image   *multipart.FileHeader `form:"image" binding:"required"`
+	Title      string                `form:"title" binding:"required"`
+	Body       string                `form:"body" binding:"required"`
+	Excerpt    string                `form:"excerpt" binding:"required"`
+	CategoryID uint                  `form:"categoryId" binding:"required"`
+	Image      *multipart.FileHeader `form:"image" binding:"required"`
 }
 
 type updateArticleForm struct {
-	Title   string                `form:"title"`
-	Body    string                `form:"body"`
-	Excerpt string                `form:"excerpt"`
-	Image   *multipart.FileHeader `form:"image"`
+	Title      string                `form:"title"`
+	Body       string                `form:"body"`
+	Excerpt    string                `form:"excerpt"`
+	CategoryID uint                  `form:"categoryId"`
+	Image      *multipart.FileHeader `form:"image"`
 }
 
 type articleResponse struct {
-	ID      uint   `json:"id"`
-	Title   string `json:"title"`
-	Excerpt string `json:"excerpt"`
-	Body    string `json:"body"`
-	Image   string `json:"image"`
+	ID         uint   `json:"id"`
+	Title      string `json:"title"`
+	Excerpt    string `json:"excerpt"`
+	Body       string `json:"body"`
+	Image      string `json:"image"`
+	CategoryID uint   `json:"categoryID"`
+	Category   struct {
+		ID   uint   `json:"id"`
+		Name string `json:"name"`
+	} `json:"category"`
 }
 
 type articlesPaging struct {
@@ -55,7 +62,7 @@ func (a *Articles) FindAll(ctx *gin.Context) {
 	// /articles?limit=10 => limit => 10, page => 1
 	// /articles?page=10 => limit => 12, page => 10
 	// /articles?limit=10&page=2 => limit => 10, page => 2
-	pagination := pagination{ctx: ctx, query: a.DB.Order("id desc"), records: &articles}
+	pagination := pagination{ctx: ctx, query: a.DB.Preload("Category").Order("id desc"), records: &articles}
 	paging := pagination.paginate()
 
 	var serializedArticles []articleResponse
@@ -181,7 +188,7 @@ func (a *Articles) findArticleByID(ctx *gin.Context) (models.Article, error) {
 	var article models.Article
 	id := ctx.Param("id")
 
-	if err := a.DB.First(&article, id).Error; err != nil {
+	if err := a.DB.Preload("Category").First(&article, id).Error; err != nil {
 		return article, err
 	}
 
