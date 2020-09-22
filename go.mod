@@ -10,5 +10,6 @@ require (
 	github.com/jinzhu/now v1.1.1 // indirect
 	github.com/joho/godotenv v1.3.0
 	github.com/prometheus/common v0.13.0
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	gopkg.in/gormigrate.v1 v1.6.0
 )
