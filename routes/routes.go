@@ -30,7 +30,7 @@ func Serve(r *gin.Engine) {
 	{
 		articlesGroup.GET("/", articleController.FindAll)
 		articlesGroup.GET("/:id", articleController.FindOne)
-		articlesGroup.POST("/", articleController.Create)
+		articlesGroup.POST("/", authenticate, articleController.Create)
 		articlesGroup.PATCH("/:id", articleController.Update)
 		articlesGroup.DELETE("/:id", articleController.Delete)
 	}

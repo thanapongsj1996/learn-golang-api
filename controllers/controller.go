@@ -35,9 +35,9 @@ func (p *pagination) paginate() *pagingResult {
 	// 3. Find records
 	// limit , offset
 	// EX. limit => 10
-	// page => 1 , 1 -10 , offser = 0
-	// page => 2 , 11 -20 , offser = 10
-	// page => 3 , 21 -30 , offser = 20
+	// page => 1 , 1 -10 , offset = 0
+	// page => 2 , 11 -20 , offset = 10
+	// page => 3 , 21 -30 , offset = 20
 	offset := (page - 1) * limit
 	p.query.Limit(limit).Offset(offset).Find(p.records)
 
