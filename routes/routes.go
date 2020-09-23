@@ -12,11 +12,17 @@ func Serve(r *gin.Engine) {
 	db := config.GetDB()
 	v1 := r.Group("/api/v1")
 
+	// เป็นการอ่านค่าของ JWT จาก header แล้วเอา JWT มาดึงในส่วน payload
+	// หาค่าของ sub แล้วเอา sub ไปหา user แล้วคืน user กลับมาในส่วน context
+	authenticate := middlewares.Authenticate().MiddlewareFunc()
+
 	authGroup := v1.Group("auth")
 	authController := controllers.Auth{DB: db}
 	{
 		authGroup.POST("/sign-up", authController.Signup)
 		authGroup.POST("/sign-in", middlewares.Authenticate().LoginHandler)
+		authGroup.GET("/profile", authenticate, authController.GetProfile)
+		authGroup.PATCH("/profile", authenticate, authController.UpdateProfile)
 	}
 
 	articlesGroup := v1.Group("articles")

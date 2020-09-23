@@ -173,12 +173,12 @@ func (a *Articles) setArticleImage(ctx *gin.Context, article *models.Article) er
 
 	path := "uploads/articles/" + strconv.Itoa(int(article.ID))
 	os.MkdirAll(path, 0755)
-	filename := path + "/" + file.Filename
-	if err := ctx.SaveUploadedFile(file, filename); err != nil {
+	dst := path + "/" + file.Filename
+	if err := ctx.SaveUploadedFile(file, dst); err != nil {
 		return err
 	}
 
-	article.Image = os.Getenv("HOST") + "/" + filename
+	article.Image = os.Getenv("HOST") + "/" + dst
 	a.DB.Save(article)
 
 	return nil
