@@ -22,7 +22,7 @@ type creatArticleForm struct {
 	Body       string                `form:"body" binding:"required"`
 	Excerpt    string                `form:"excerpt" binding:"required"`
 	CategoryID uint                  `form:"categoryId" binding:"required"`
-	Image      *multipart.FileHeader `form:"image" binding:"required"`
+	Image      *multipart.FileHeader `form:"image"`
 }
 
 type updateArticleForm struct {
@@ -57,16 +57,15 @@ type articlesPaging struct {
 
 func (a *Articles) FindAll(ctx *gin.Context) {
 	var articles []models.Article
+	query := a.DB.Preload("User").Preload("Category").Order("id")
 
-	if err := a.DB.Find(&articles).Error; err != nil {
-		return
-	}
 	// default limit => 12
 	// /articles => limit => 12, page => 1
 	// /articles?limit=10 => limit => 10, page => 1
 	// /articles?page=10 => limit => 12, page => 10
 	// /articles?limit=10&page=2 => limit => 10, page => 2
-	pagination := pagination{ctx: ctx, query: a.DB.Preload("User").Preload("Category").Order("id"), records: &articles}
+
+	pagination := pagination{ctx: ctx, query: query, records: &articles}
 	paging := pagination.paginate()
 
 	var serializedArticles []articleResponse
