@@ -69,7 +69,7 @@ func (a *Articles) FindAll(ctx *gin.Context) {
 	pagination := pagination{ctx: ctx, query: query, records: &articles}
 	paging := pagination.paginate()
 
-	var serializedArticles []articleResponse
+	serializedArticles := []articleResponse{}
 	copier.Copy(&serializedArticles, &articles)
 
 	ctx.JSON(http.StatusOK, gin.H{"articles": articlesPaging{Items: serializedArticles, Paging: paging}})

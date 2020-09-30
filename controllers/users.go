@@ -43,21 +43,13 @@ type usersPaging struct {
 }
 
 func (u *Users) FindAll(ctx *gin.Context) {
-	sub, _ := ctx.Get("sub")
-	if sub.(*models.User).Role != "Admin" {
-		// 401 unathorized => login
-		// 403 forbidden => ไม่มีสิืธ์
-		ctx.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
-		return
-	}
-
 	var users []models.User
 	query := u.DB.Order("id").Find(&users)
 
 	pagination := pagination{ctx: ctx, query: query, records: &users}
 	paging := pagination.paginate()
 
-	var serializedUsers []userResponse
+	serializedUsers := []userResponse{}
 	copier.Copy(&serializedUsers, &users)
 	ctx.JSON(http.StatusOK, gin.H{"users": usersPaging{Items: serializedUsers, Paging: paging}})
 }

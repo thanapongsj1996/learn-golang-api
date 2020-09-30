@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go v0.34.0
 	github.com/appleboy/gin-jwt/v2 v2.6.4
 	github.com/bxcodec/faker/v3 v3.5.0
+	github.com/casbin/casbin v1.9.1
 	github.com/gin-gonic/gin v1.6.3
 	github.com/google/martian v2.1.0+incompatible // indirect
 	github.com/googleapis/gax-go v1.0.3 // indirect
