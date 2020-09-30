@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"learn-golang-api/cloudbucket"
 	"learn-golang-api/models"
 	"mime/multipart"
 	"net/http"
@@ -108,7 +109,8 @@ func (a *Articles) Create(ctx *gin.Context) {
 		return
 	}
 
-	a.setArticleImage(ctx, &article)
+	// a.setArticleImage(ctx, &article)
+	cloudbucket.HandleFileUploadToBucket(ctx, "image", "profile")
 	serializedArticle := articleResponse{}
 	copier.Copy(&serializedArticle, &article)
 

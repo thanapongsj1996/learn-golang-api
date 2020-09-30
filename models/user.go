@@ -26,12 +26,3 @@ func (u *User) GenerateEncryptedPassword() string {
 	hash, _ := bcrypt.GenerateFromPassword([]byte(u.Password), 14)
 	return string(hash)
 }
-
-// func (u *User) BeforeSave(scope *gorm.Scope) {
-// 	if u.Password == "" {
-// 		return
-// 	}
-
-// 	hash, _ := bcrypt.GenerateFromPassword([]byte(u.Password), 14)
-// 	scope.SetColumn("password", string(hash))
-// }

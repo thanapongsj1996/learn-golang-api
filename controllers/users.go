@@ -43,6 +43,14 @@ type usersPaging struct {
 }
 
 func (u *Users) FindAll(ctx *gin.Context) {
+	sub, _ := ctx.Get("sub")
+	if sub.(*models.User).Role != "Admin" {
+		// 401 unathorized => login
+		// 403 forbidden => ไม่มีสิืธ์
+		ctx.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
+	}
+
 	var users []models.User
 	query := u.DB.Order("id").Find(&users)
 
@@ -61,9 +69,99 @@ func (u *Users) FindOne(ctx *gin.Context) {
 		return
 	}
 
-	var serializedUsers models.User
+	var serializedUsers userResponse
 	copier.Copy(&serializedUsers, &user)
 	ctx.JSON(http.StatusOK, gin.H{"user": serializedUsers})
+}
+
+func (u *Users) Create(ctx *gin.Context) {
+	var form creatUsersForm
+	if err := ctx.ShouldBindJSON(&form); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+		return
+	}
+
+	var user models.User
+	copier.Copy(&user, &form)
+	user.Password = user.GenerateEncryptedPassword()
+
+	if err := u.DB.Create(&user).Error; err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+		return
+	}
+
+	var serializedUser userResponse
+	copier.Copy(&serializedUser, &user)
+	ctx.JSON(http.StatusCreated, gin.H{"user": serializedUser})
+}
+
+func (u *Users) Update(ctx *gin.Context) {
+	var form updateUsersForm
+	if err := ctx.ShouldBindJSON(&form); err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+		return
+	}
+
+	user, err := u.findUserByID(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	if form.Password != "" {
+		user.Password = user.GenerateEncryptedPassword()
+	}
+
+	if err := u.DB.Model(&user).Update(&form).Error; err != nil {
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": err.Error()})
+		return
+	}
+
+	var serializedUser userResponse
+	copier.Copy(&serializedUser, &user)
+	ctx.JSON(http.StatusCreated, gin.H{"user": serializedUser})
+}
+
+func (u *Users) Delete(ctx *gin.Context) {
+	user, err := u.findUserByID(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	u.DB.Unscoped().Delete(&user)
+
+	ctx.Status(http.StatusNoContent)
+}
+
+func (u *Users) Promote(ctx *gin.Context) {
+	user, err := u.findUserByID(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	user.Promote()
+	u.DB.Save(user)
+
+	var serializedUser userResponse
+	copier.Copy(&serializedUser, &user)
+	ctx.JSON(http.StatusCreated, gin.H{"user": serializedUser})
+}
+
+func (u *Users) Demote(ctx *gin.Context) {
+	user, err := u.findUserByID(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	user.Demote()
+	u.DB.Save(user)
+
+	var serializedUser userResponse
+	copier.Copy(&serializedUser, &user)
+	ctx.JSON(http.StatusCreated, gin.H{"user": serializedUser})
 }
 
 func (u *Users) findUserByID(ctx *gin.Context) (*models.User, error) {
