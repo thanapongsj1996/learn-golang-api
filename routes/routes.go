@@ -41,22 +41,22 @@ func Serve(r *gin.Engine) {
 
 	articleController := controllers.Articles{DB: db}
 	articlesGroup := v1.Group("articles")
-	articlesGroup.GET("/", articleController.FindAll)
+	articlesGroup.GET("", articleController.FindAll)
 	articlesGroup.GET("/:id", articleController.FindOne)
 	articlesGroup.Use(authenticate, authorize)
 	{
-		articlesGroup.POST("/", authenticate, articleController.Create)
+		articlesGroup.POST("", authenticate, articleController.Create)
 		articlesGroup.PATCH("/:id", articleController.Update)
 		articlesGroup.DELETE("/:id", articleController.Delete)
 	}
 
 	categoryController := controllers.Categories{DB: db}
 	categoriesGroup := v1.Group("categories")
-	categoriesGroup.GET("/", categoryController.FindAll)
+	categoriesGroup.GET("", categoryController.FindAll)
 	categoriesGroup.GET("/:id", categoryController.FindOne)
 	categoriesGroup.Use(authenticate, authorize)
 	{
-		categoriesGroup.POST("/", categoryController.Create)
+		categoriesGroup.POST("", categoryController.Create)
 		categoriesGroup.PATCH("/:id", categoryController.Update)
 		categoriesGroup.DELETE("/:id", categoryController.Delete)
 	}
